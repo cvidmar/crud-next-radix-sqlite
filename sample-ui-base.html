@@ -2,7 +2,7 @@
 <html class="dark" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Simple Project Dashboard</title>
+<title>Mobile Dashboard Empty State</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -32,14 +32,11 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .sidebar-item-active {
-            @apply bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white;
-        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased font-display">
-<div class="flex h-screen overflow-hidden">
-<aside class="w-72 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col">
+<div class="flex h-screen overflow-hidden flex-col">
+<aside class="hidden lg:flex w-72 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex-col">
 <div class="p-6">
 <div class="flex items-center gap-3 mb-8">
 <div class="bg-primary rounded-lg size-10 flex items-center justify-center text-white shadow-lg shadow-primary/20">
@@ -59,81 +56,64 @@
 <div class="mb-4">
 <p class="px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Your Projects</p>
 <div class="space-y-1">
-<a class="flex items-center justify-between px-3 py-2.5 rounded-lg sidebar-item-active group transition-all" href="#">
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white group transition-all" href="#">
 <div class="flex items-center gap-3">
 <span class="size-2 rounded-full bg-primary"></span>
 <span class="text-sm font-medium">Project Alpha</span>
 </div>
-<span class="material-symbols-outlined text-slate-400 opacity-0 group-hover:opacity-100 text-sm transition-opacity">more_vert</span>
 </a>
 <a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-all" href="#">
 <div class="flex items-center gap-3">
 <span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
 <span class="text-sm font-medium">Beta Launch</span>
 </div>
-<span class="material-symbols-outlined text-slate-400 opacity-0 group-hover:opacity-100 text-sm transition-opacity">more_vert</span>
-</a>
-<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-all" href="#">
-<div class="flex items-center gap-3">
-<span class="size-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
-<span class="text-sm font-medium">Internal Research</span>
-</div>
-<span class="material-symbols-outlined text-slate-400 opacity-0 group-hover:opacity-100 text-sm transition-opacity">more_vert</span>
 </a>
 </div>
 </div>
 </nav>
 </aside>
 <main class="flex-1 flex flex-col bg-background-light dark:bg-background-dark overflow-hidden">
-<header class="h-16 flex items-center justify-between px-8 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
-<div class="w-full max-w-md">
-<div class="relative group">
-<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 group-focus-within:text-primary transition-colors">
-<span class="material-symbols-outlined text-[20px]">search</span>
-</span>
-<input class="block w-full rounded-lg border border-transparent bg-slate-100 dark:bg-slate-800/50 py-1.5 pl-10 pr-3 text-sm placeholder-slate-500 focus:ring-0 focus:border-slate-200 dark:focus:border-slate-700 dark:text-slate-100 transition-all" placeholder="Search project assets..." type="text"/>
-</div>
-</div>
-<div class="flex items-center gap-6">
-<button class="relative p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-<span class="material-symbols-outlined">notifications</span>
+<header class="h-16 flex items-center justify-between px-4 sm:px-8 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[28px]">menu</span>
 </button>
-<div class="flex items-center gap-3 group cursor-pointer">
-<div class="text-right hidden sm:block">
-<p class="text-xs font-semibold leading-none">Alex Rivera</p>
-<p class="text-[10px] text-slate-500 mt-0.5">Project Manager</p>
+<h1 class="text-sm sm:text-base font-bold dark:text-white">Project Dashboard</h1>
 </div>
-<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDxM7fsKtnE_hmyofxTaPyohtlzsWPHlbjBiDlnLM617E8nAH8dT_lmhaZzSt774HZt52alxx5zRcnC_Za2T6TAFVPIVcFxgQhApdbpaBAXGR9sLAdWA0_7DIHN_QepPIc2l-wdJmd7nTtgpeTniKmSQwWnbCuNGVNKKRBMTQ2mtZSrSqEWXA99rzxyv-CwT8YcmJAESH66QLMIqC-7WNO5_C7Vpae-q1v6aGdGC456ioSH6LF3VvOolNmn2i0HCJz7Ap0XrH5fCLM');"></div>
-</div>
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center ring-2 ring-white dark:ring-slate-800 shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDxM7fsKtnE_hmyofxTaPyohtlzsWPHlbjBiDlnLM617E8nAH8dT_lmhaZzSt774HZt52alxx5zRcnC_Za2T6TAFVPIVcFxgQhApdbpaBAXGR9sLAdWA0_7DIHN_QepPIc2l-wdJmd7nTtgpeTniKmSQwWnbCuNGVNKKRBMTQ2mtZSrSqEWXA99rzxyv-CwT8YcmJAESH66QLMIqC-7WNO5_C7Vpae-q1v6aGdGC456ioSH6LF3VvOolNmn2i0HCJz7Ap0XrH5fCLM');"></div>
 </div>
 </header>
-<div class="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center">
-<div class="max-w-[480px] w-full text-center">
-<div class="relative mb-10 flex justify-center">
+<div class="flex-1 overflow-y-auto p-6 sm:p-8 flex flex-col items-center justify-center">
+<div class="max-w-[420px] w-full text-center">
+<div class="relative mb-8 flex justify-center">
 <div class="absolute inset-0 bg-primary/10 rounded-full blur-3xl opacity-50"></div>
-<div class="relative bg-white dark:bg-slate-800 size-24 rounded-2xl flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
-<span class="material-symbols-outlined text-primary text-[48px]" style="font-variation-settings: 'FILL' 0, 'wght' 300;">rocket_launch</span>
+<div class="relative bg-white dark:bg-slate-800 size-20 sm:size-24 rounded-2xl flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-primary text-[40px] sm:text-[48px]" style="font-variation-settings: 'FILL' 0, 'wght' 300;">rocket_launch</span>
 </div>
 </div>
-<h2 class="text-slate-900 dark:text-slate-50 text-3xl font-bold tracking-tight mb-4">
-                    Ready to launch
-                </h2>
-<p class="text-slate-600 dark:text-slate-400 text-base leading-relaxed mb-10">
-                    Your workspace is ready. Start your journey by creating a new project or select one from the sidebar to continue your work.
-                </p>
-<div class="flex flex-col items-center gap-4">
-<button class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-primary py-3 px-10 text-sm font-semibold text-white hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<h2 class="text-slate-900 dark:text-slate-50 text-2xl sm:text-3xl font-bold tracking-tight mb-4">
+                        Ready to launch
+                    </h2>
+<p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed mb-10">
+                        Your workspace is ready. Start your journey by creating a new project to continue your work.
+                    </p>
+<div class="flex flex-col items-center">
+<button class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-primary py-3.5 px-8 text-sm font-semibold text-white hover:bg-primary/90 active:scale-[0.98] transition-all shadow-lg shadow-primary/20">
 <span class="material-symbols-outlined text-[20px]">add_circle</span>
 <span>Create New Project</span>
 </button>
 </div>
 </div>
 </div>
-<footer class="h-10 border-t border-slate-100 dark:border-slate-800/50 bg-white/50 dark:bg-transparent px-8 flex items-center justify-between text-[10px] font-medium text-slate-400 uppercase tracking-widest">
-<div class="flex items-center gap-6">
-<span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-emerald-500"></span> System Operational</span>
+<footer class="h-10 border-t border-slate-100 dark:border-slate-800/50 bg-white/50 dark:bg-transparent px-4 sm:px-8 flex items-center justify-between text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1.5">
+<span class="size-1.5 rounded-full bg-emerald-500"></span> 
+                        Operational
+                    </span>
 </div>
-<div>Build 1.0.4</div>
+<div>v1.0.4</div>
 </footer>
 </main>
 </div>
