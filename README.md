@@ -2,6 +2,15 @@
 
 A production-ready sample application demonstrating modern Next.js patterns with TypeScript, Radix UI, and SQLite.
 
+<p align="center">
+  <img src="docs/images/mobile-view.png" alt="Mobile view with navigation drawer" height="400" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/images/desktop-view.png" alt="Desktop view with sidebar" height="400" />
+</p>
+<p align="center">
+  <em>Responsive design: Mobile navigation drawer (left) and desktop sidebar (right)</em>
+</p>
+
 ## Purpose
 
 This is a **learning-focused project** designed for developers who:
