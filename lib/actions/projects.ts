@@ -17,6 +17,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 import {
   createProject as dbCreateProject,
   updateProject as dbUpdateProject,
@@ -47,9 +48,10 @@ export async function createProject(prevState: any, formData: FormData) {
 
   if (!validationResult.success) {
     // Return validation errors to the client
+    const flattened = z.flattenError(validationResult.error);
     return {
       success: false,
-      errors: validationResult.error.flatten().fieldErrors,
+      errors: flattened.fieldErrors,
       message: 'Invalid form data',
     };
   }
@@ -96,9 +98,10 @@ export async function updateProject(id: number, prevState: any, formData: FormDa
   const validationResult = updateProjectSchema.safeParse(rawData);
 
   if (!validationResult.success) {
+    const flattened = z.flattenError(validationResult.error);
     return {
       success: false,
-      errors: validationResult.error.flatten().fieldErrors,
+      errors: flattened.fieldErrors,
       message: 'Invalid form data',
     };
   }

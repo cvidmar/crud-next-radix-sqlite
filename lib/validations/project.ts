@@ -32,8 +32,7 @@ export const createProjectSchema = z.object({
     .max(500, 'Description must be less than 500 characters'),
 
   category: z.enum(['infrastructure', 'product', 'marketing', 'internal'], {
-    required_error: 'Please select a category',
-    message: 'Invalid category selected',
+    message: 'Please select a category',
   }),
 
   isPublic: z.boolean().default(false),
