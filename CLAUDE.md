@@ -210,3 +210,4 @@ Core workflow:
 3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
 4. Re-snapshot after page changes
 
+- Stop the dev server at the end of every testing session.
