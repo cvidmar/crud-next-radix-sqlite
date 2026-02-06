@@ -41,7 +41,21 @@ pnpm lint     # Run ESLint checks
 - When using browser automation, always run `pnpm dlx agent-browser <PARAMS>` instead of `agent-browser <PARAMS>`. This is an explicit exception to the install-approval rule above; do not ask for approval before running `pnpm dlx agent-browser <PARAMS>` except for `pnpm dlx agent-browser install`: never run `pnpm dlx agent-browser install`.
 - Stop the dev server at the end of every testing session.
 
-## Browser Automation
+## Testing
+
+### Test Plan
+
+See `docs/TEST_PLAN.md` for a comprehensive list of use cases to test, including:
+- All CRUD operations (Create, Read, Update, Delete projects)
+- Form validation scenarios
+- Edge cases (invalid IDs, 404 handling)
+- UI/UX considerations (responsive, dark mode, loading states)
+- Priority levels (P0-P3) for what to test based on change type
+- Regression checklist for common issues
+
+### Browser Automation
+
+**Important**: Always run tests in headless mode (the default). Only use `--headed` flag when explicitly requested by the user.
 
 Use `agent-browser` for web automation. Run `pnpm dlx  agent-browser --help` for all commands.
 
@@ -50,3 +64,12 @@ Core workflow:
 2. `pnpm dlx agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
 3. `pnpm dlx agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
 4. Re-snapshot after page changes
+5. Stop the dev server at the end of every testing session.
+
+### Quick Smoke Test
+
+After any significant change:
+```bash
+pnpm build    # Should complete without errors
+pnpm dev      # Start dev server, then test manually or with agent-browser
+``` 

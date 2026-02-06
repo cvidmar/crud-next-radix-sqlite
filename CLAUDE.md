@@ -200,14 +200,30 @@ Forms use the modern **Server Actions + useActionState** pattern:
 
 Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
-## Browser Automation
+## Testing
 
-Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
+### Test Plan
 
-Core workflow:
-1. `agent-browser open <url>` - Navigate to page
-2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
-3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
-4. Re-snapshot after page changes
+See `docs/TEST_PLAN.md` for a comprehensive list of use cases to test, including:
+- All CRUD operations (Create, Read, Update, Delete projects)
+- Form validation scenarios
+- Edge cases (invalid IDs, 404 handling)
+- UI/UX considerations (responsive, dark mode, loading states)
+- Priority levels (P0-P3) for what to test based on change type
+- Regression checklist for common issues
 
+### Browser Automation
+
+Use the `agent-browser` skill for web automation testing. If calling `agent-browser` fails, run it with `pnpm dlx agent-browser`
+
+**Project rules:**
+- Always run tests in headless mode (the default). Only use `--headed` when explicitly requested.
 - Stop the dev server at the end of every testing session.
+
+### Quick Smoke Test
+
+After any significant change:
+```bash
+pnpm build    # Should complete without errors
+pnpm dev      # Start dev server, then test manually or with agent-browser
+``` 
