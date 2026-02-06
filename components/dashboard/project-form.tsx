@@ -29,8 +29,20 @@ import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import { useState } from 'react';
 
+// Type for the action state returned by Server Actions
+interface ActionState {
+  success?: boolean;
+  message?: string;
+  errors?: {
+    name?: string[];
+    description?: string[];
+    category?: string[];
+    isPublic?: string[];
+  };
+}
+
 interface ProjectFormProps {
-  action: any; // Server Action function
+  action: (prevState: ActionState | null, formData: FormData) => Promise<ActionState>;
   defaultValues?: {
     name?: string;
     description?: string;
@@ -47,7 +59,7 @@ export function ProjectForm({
 }: ProjectFormProps) {
   // React 19's useActionState hook for handling Server Actions
   // prevState starts as null, gets updated with action result
-  const [state, formAction, isPending] = useActionState(action, null);
+  const [state, formAction, isPending] = useActionState<ActionState | null, FormData>(action, null);
 
   // Local state for controlled components
   const [category, setCategory] = useState(defaultValues.category || 'infrastructure');
@@ -143,11 +155,9 @@ export function ProjectForm({
 
       {/* Form actions */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-        <Link href="/">
-          <Button type="button" variant="ghost">
-            Cancel
-          </Button>
-        </Link>
+        <Button asChild variant="ghost">
+          <Link href="/">Cancel</Link>
+        </Button>
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Saving...' : submitLabel}
         </Button>

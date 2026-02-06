@@ -24,6 +24,11 @@ export default async function EditProjectPage({ params }: PageProps) {
   const { id } = await params;
   const projectId = parseInt(id, 10);
 
+  // Guard against invalid IDs (NaN or non-positive values)
+  if (Number.isNaN(projectId) || projectId <= 0) {
+    notFound();
+  }
+
   // Fetch the existing project
   const project = getProjectById(projectId);
 

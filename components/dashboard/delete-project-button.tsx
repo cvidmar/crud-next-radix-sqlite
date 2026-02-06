@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -35,6 +36,10 @@ export function DeleteProjectButton({ projectId, projectName }: DeleteProjectBut
       await deleteProjectAction(projectId);
       // If successful, the Server Action will redirect, so we won't reach here
     } catch (error) {
+      // Rethrow redirect errors so Next.js can handle navigation
+      if (isRedirectError(error)) {
+        throw error;
+      }
       console.error('Delete failed:', error);
       setIsDeleting(false);
       setOpen(false);

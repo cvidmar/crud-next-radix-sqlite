@@ -94,8 +94,8 @@ export default async function DashboardPage() {
             Manage your projects and track progress
           </p>
         </div>
-        <Link href="/projects/new">
-          <Button>
+        <Button asChild>
+          <Link href="/projects/new">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -110,8 +110,8 @@ export default async function DashboardPage() {
               />
             </svg>
             New Project
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </header>
 
       {/* Content */}
@@ -138,9 +138,9 @@ export default async function DashboardPage() {
             <p className="text-slate-500 dark:text-slate-400 mb-6">
               Get started by creating your first project
             </p>
-            <Link href="/projects/new">
-              <Button>Create Project</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/projects/new">Create Project</Link>
+            </Button>
           </div>
         ) : (
           /* Project grid */

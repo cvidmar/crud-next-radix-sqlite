@@ -29,6 +29,11 @@ export default async function ProjectPage({ params }: PageProps) {
   const { id } = await params;
   const projectId = parseInt(id, 10);
 
+  // Guard against invalid IDs (NaN or non-positive values)
+  if (Number.isNaN(projectId) || projectId <= 0) {
+    notFound();
+  }
+
   // Fetch the project from database
   const project = getProjectById(projectId);
 
@@ -61,11 +66,11 @@ export default async function ProjectPage({ params }: PageProps) {
           <span className="font-medium">{project.name}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href={`/projects/${project.id}/edit`}>
-            <Button variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/projects/${project.id}/edit`}>
               Edit Project
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </header>
 
