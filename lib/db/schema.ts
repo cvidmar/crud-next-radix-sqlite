@@ -1,9 +1,14 @@
 /**
  * Database Schema Definition
  *
- * This file defines the TypeScript types that mirror our SQLite database schema.
- * In a production app, you might use an ORM like Drizzle or Prisma, but for learning
- * purposes, we're using raw SQL to understand the fundamentals.
+ * This file defines the TypeScript types that mirror our PostgreSQL database schema.
+ * Unlike SQLite, PostgreSQL returns native booleans and Date objects, so our types
+ * are more straightforward — no need for integer-to-boolean conversion.
+ *
+ * Column name mapping:
+ * The postgres.js driver is configured with `transform: postgres.camel`, which
+ * automatically converts snake_case DB columns (is_public, created_at) to
+ * camelCase JS properties (isPublic, createdAt).
  */
 
 export interface Project {
@@ -11,9 +16,9 @@ export interface Project {
   name: string;
   description: string;
   category: 'infrastructure' | 'product' | 'marketing' | 'internal';
-  isPublic: number; // SQLite uses integers for booleans: 0 = false, 1 = true
-  createdAt: string; // SQLite stores dates as ISO strings
-  updatedAt: string;
+  isPublic: boolean; // PostgreSQL BOOLEAN maps directly to JS boolean
+  createdAt: Date; // PostgreSQL TIMESTAMPTZ maps to JS Date
+  updatedAt: Date;
 }
 
 /**
@@ -35,11 +40,4 @@ export interface UpdateProjectInput {
   description?: string;
   category?: Project['category'];
   isPublic?: boolean;
-}
-
-/**
- * Project type with boolean conversion for easier use in React
- */
-export interface ProjectWithBoolean extends Omit<Project, 'isPublic'> {
-  isPublic: boolean;
 }

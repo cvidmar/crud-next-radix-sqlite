@@ -8,7 +8,7 @@ This document explains the high-level architecture of this Next.js CRUD applicat
 - **React 19**: Latest React with Server Components and Server Actions
 - **TypeScript 5**: Type-safe development
 - **Tailwind CSS v4**: Utility-first styling
-- **better-sqlite3**: Synchronous SQLite database
+- **postgres.js**: PostgreSQL client with connection pooling
 - **Radix UI**: Unstyled, accessible component primitives
 - **Zod v4**: Runtime validation and type inference
 

@@ -1,122 +1,117 @@
 /**
  * Database Connection and Initialization
  *
- * This module sets up our SQLite database connection using better-sqlite3.
- * Better-sqlite3 is synchronous and fast - perfect for server-side operations.
+ * This module sets up our PostgreSQL connection using postgres.js.
+ * postgres.js uses a connection pool under the hood — connections are
+ * created lazily on the first query and reused automatically.
  *
  * Key Learning Points:
- * - Singleton pattern: We create one database instance and reuse it
- * - Module caching: Node.js caches modules, so this only runs once
- * - Migration strategy: Simple SQL-based migrations for learning
+ * - Connection pool: postgres.js manages a pool of connections (default max: 10)
+ * - Lazy connections: No connection is opened until the first query runs
+ * - Tagged templates: Queries use sql`...` template literals for safe parameterization
+ * - Environment variables: Connection string comes from DATABASE_URL
  */
 
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
-
-// Get the directory name (needed for ES modules)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Database file path - stored in the project root
-const dbPath = path.join(process.cwd(), 'data', 'app.db');
-
-// Ensure the data directory exists
-const dataDir = path.dirname(dbPath);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+import postgres from 'postgres';
 
 /**
- * Create and configure the database instance
+ * Create the database connection pool
  *
- * Options explained:
- * - verbose: Logs all SQL queries (useful for learning, disable in production)
- * - fileMustExist: false - create the file if it doesn't exist
+ * The postgres() function returns a sql template tag that also acts as
+ * the connection pool. All queries go through this single instance.
  */
-const db = new Database(dbPath, {
-  verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
-});
+const sql = postgres(process.env.DATABASE_URL!, {
+  // Automatically convert snake_case columns to camelCase JS properties
+  // (e.g., is_public → isPublic, created_at → createdAt)
+  transform: postgres.camel,
 
-// Enable foreign keys (SQLite doesn't enable them by default)
-db.pragma('foreign_keys = ON');
+  // Log queries in development for learning and debugging
+  debug: process.env.NODE_ENV === 'development'
+    ? (_connection, query) => console.log(query)
+    : undefined,
+});
 
 /**
  * Initialize database schema
  *
- * This creates our tables if they don't exist. In production, you'd use
- * a proper migration system (like node-migrate or Drizzle Kit).
+ * Creates tables if they don't exist and seeds initial data.
+ * In production, you'd use a migration tool (like Drizzle Kit or node-pg-migrate).
  */
-function initializeDatabase() {
-  // Create projects table
-  db.exec(`
+async function initializeDatabase() {
+  // Create projects table with PostgreSQL types
+  await sql`
     CREATE TABLE IF NOT EXISTS projects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       description TEXT NOT NULL,
       category TEXT NOT NULL CHECK(category IN ('infrastructure', 'product', 'marketing', 'internal')),
-      isPublic INTEGER NOT NULL DEFAULT 0 CHECK(isPublic IN (0, 1)),
-      createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+      is_public BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
-  `);
+  `;
 
   // Create an index on category for faster queries
-  db.exec(`
+  await sql`
     CREATE INDEX IF NOT EXISTS idx_projects_category
     ON projects(category)
-  `);
+  `;
 
   // Seed data if the table is empty
-  const count = db.prepare('SELECT COUNT(*) as count FROM projects').get() as { count: number };
+  const [{ count }] = await sql<[{ count: number }]>`
+    SELECT COUNT(*)::int AS count FROM projects
+  `;
 
-  if (count.count === 0) {
-    const insert = db.prepare(`
-      INSERT INTO projects (name, description, category, isPublic)
-      VALUES (?, ?, ?, ?)
-    `);
-
+  if (count === 0) {
     const projects = [
       {
         name: 'Project Alpha',
         description: 'Next-generation frontend infrastructure project designed to scale with multi-tenant architectures and Radix UI design systems.',
         category: 'infrastructure',
-        isPublic: 1,
+        is_public: true,
       },
       {
         name: 'Beta Launch',
         description: 'Product development initiative focused on delivering core features for our upcoming beta release.',
         category: 'product',
-        isPublic: 0,
+        is_public: false,
       },
       {
         name: 'Internal Research',
         description: 'Research and development project exploring new technologies and architectural patterns.',
         category: 'internal',
-        isPublic: 0,
+        is_public: false,
       },
     ];
 
-    // Use a transaction for better performance when inserting multiple rows
-    const insertMany = db.transaction((projects) => {
-      for (const project of projects) {
-        insert.run(project.name, project.description, project.category, project.isPublic);
-      }
-    });
+    // Insert all seed rows
+    for (const project of projects) {
+      await sql`
+        INSERT INTO projects (name, description, category, is_public)
+        VALUES (${project.name}, ${project.description}, ${project.category}, ${project.is_public})
+      `;
+    }
 
-    insertMany(projects);
     console.log('✅ Database seeded with initial projects');
   }
 }
 
-// Initialize the database on module load
-initializeDatabase();
+/**
+ * Initialization promise
+ *
+ * Since initializeDatabase() is async but module loading is synchronous,
+ * we store the promise so that repository functions can await it before
+ * running queries. This prevents a race condition where a page request
+ * arrives before the CREATE TABLE has finished.
+ */
+const initialized = initializeDatabase().catch((err) => {
+  console.error('❌ Database initialization failed:', err.message);
+});
 
 /**
- * Export the database instance
+ * Export the sql instance and the initialization promise.
  *
- * In Next.js, this will be imported in Server Components and Server Actions.
- * Never import this in Client Components - it won't work (and shouldn't work).
+ * In Next.js, these will be imported in Server Components and Server Actions.
+ * Never import this in Client Components — it won't work (and shouldn't).
  */
-export { db };
+export { sql, initialized };

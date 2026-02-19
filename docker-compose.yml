@@ -1,0 +1,21 @@
+# Docker Compose for local PostgreSQL development
+#
+# Usage:
+#   docker compose up -d      # Start PostgreSQL in the background
+#   docker compose down        # Stop PostgreSQL (data persists in volume)
+#   docker compose down -v     # Stop and delete all data
+
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ts_fs_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
