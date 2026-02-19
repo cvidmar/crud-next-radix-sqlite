@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a sample Next.js 16 project with TypeScript, designed as a simple CRUD application with Radix UI components and SQLite database integration. The project uses the App Router architecture and Tailwind CSS v4 for styling. This project is not for production but just for learning purposes, it's aimed at developers who want to get familiar with this tech stack.
+This is a sample Next.js 16 project with TypeScript, designed as a simple CRUD application with Radix UI components and PostgreSQL database integration. The project uses the App Router architecture and Tailwind CSS v4 for styling. This project is not for production but just for learning purposes, it's aimed at developers who want to get familiar with this tech stack.
 
 During development, focus is on creating clear, understandable code for learning the stack. For this reason, comments are written in an explicit way wherever they are useful for a human developer to understand the architecture and coding technique.
 
@@ -13,10 +13,11 @@ During development, focus is on creating clear, understandable code for learning
 
 ### Running the Application
 ```bash
-npm run dev      # Start development server at http://localhost:3000
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint checks
+docker compose up -d   # Start PostgreSQL (first time or after restart)
+pnpm dev               # Start development server at http://localhost:3000
+pnpm build             # Build for production
+pnpm start             # Start production server
+pnpm lint              # Run ESLint checks
 ```
 
 ### Package Manager
@@ -30,7 +31,7 @@ This project uses `pnpm` (evidenced by pnpm-lock.yaml).
 - **TypeScript**: v5 with strict mode enabled
 - **Styling**: Tailwind CSS v4 with PostCSS plugin
 - **Fonts**: Geist Sans and Geist Mono (via next/font)
-- **Database**: SQLite with better-sqlite3 12.6.2
+- **Database**: PostgreSQL 17 with postgres.js (via Docker)
 - **UI Components**: Radix UI primitives (@radix-ui/react-dialog, select, switch)
 - **Validation**: Zod v4 (4.3.6)
 - **Utilities**: class-variance-authority, clsx, tailwind-merge
@@ -77,8 +78,8 @@ docs/                       # Extensive documentation
   03-routing-and-rendering.md # App Router and Server/Client Components
   04-components-and-styling.md # Component architecture and Tailwind
   05-forms-and-validation.md # Server Actions, useActionState, Zod
-data/
-  app.db                    # SQLite database (auto-created, gitignored)
+docker-compose.yml          # PostgreSQL container definition
+.env.local                  # DATABASE_URL (gitignored)
 ```
 
 ### Key Configurations
@@ -143,18 +144,21 @@ When building React components:
 
 ### Database
 
-The application uses **SQLite with better-sqlite3** for data persistence:
+The application uses **PostgreSQL with postgres.js** for data persistence:
 
-- **Location**: `data/app.db` (auto-created on first run, gitignored)
+- **Setup**: `docker compose up -d` starts PostgreSQL in Docker
+- **Connection**: `DATABASE_URL` in `.env.local` (gitignored)
 - **Initialization**: Automatic schema creation and seeding in `lib/db/index.ts`
 - **Repository Pattern**: All database operations centralized in `lib/db/projects.ts`
 - **Server Components**: Direct database access (no API routes needed)
 - **Server Actions**: Mutations handled via Server Actions with revalidation
 
 **Key patterns:**
-- Prepared statements for security and performance
-- Type conversion (SQLite integers → JS booleans)
-- Transaction support for atomic operations
+- Tagged template literals for parameterized queries (SQL injection safe)
+- `transform: postgres.camel` auto-converts snake_case columns to camelCase JS
+- Native PostgreSQL types (BOOLEAN, TIMESTAMPTZ) — no manual conversion needed
+- Transaction support via `sql.begin()`
+- `RETURNING *` clause to get inserted/updated rows in a single query
 - See `docs/02-database.md` for details
 
 ### Server Components & Server Actions

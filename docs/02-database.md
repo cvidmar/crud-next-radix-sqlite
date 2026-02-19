@@ -2,22 +2,38 @@
 
 This document explains how the database layer works and why we made specific design decisions.
 
-## Database Choice: SQLite with better-sqlite3
+## Database Choice: PostgreSQL with postgres.js
 
-We use **SQLite** with the **better-sqlite3** library for several reasons:
+We use **PostgreSQL** with the **postgres.js** library for several reasons:
 
-### Why SQLite?
-- **Zero configuration**: No separate database server needed
-- **Portable**: Single file database (perfect for learning)
-- **Fast**: In-process, no network overhead
-- **Production-ready**: Used by many real applications
-- **SQL standard**: Skills transfer to PostgreSQL, MySQL, etc.
+### Why PostgreSQL?
+- **Industry standard**: The most popular open-source relational database
+- **Rich type system**: Native BOOLEAN, TIMESTAMPTZ, JSONB, arrays, and more
+- **SQL standard**: Full SQL compliance with powerful extensions (CTEs, window functions, ILIKE)
+- **Production-ready**: Scales from development to massive production workloads
+- **Docker-friendly**: Easy to run locally in a container
 
-### Why better-sqlite3?
-- **Synchronous API**: Simpler to understand than async
-- **Fast**: One of the fastest SQLite libraries for Node.js
-- **Type-safe**: Works well with TypeScript
-- **Maintained**: Active development and good documentation
+### Why postgres.js?
+- **Tagged templates**: Uses `sql\`...\`` for safe, readable parameterized queries
+- **Connection pool**: Automatically manages a pool of connections (lazy, up to 10 by default)
+- **Transform support**: `postgres.camel` auto-converts snake_case columns to camelCase JS
+- **No native bindings**: Pure JavaScript — works everywhere without compilation
+- **Fast**: One of the fastest PostgreSQL drivers for Node.js
+
+### Local Setup with Docker
+
+PostgreSQL runs in a Docker container defined in `docker-compose.yml`:
+
+```bash
+docker compose up -d      # Start PostgreSQL in the background
+docker compose down        # Stop PostgreSQL (data persists in volume)
+docker compose down -v     # Stop and delete all data (fresh start)
+```
+
+Connection string is stored in `.env.local` (gitignored):
+```
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ts_fs_dev
+```
 
 ## Schema Design
 
@@ -25,37 +41,41 @@ We use **SQLite** with the **better-sqlite3** library for several reasons:
 
 ```sql
 CREATE TABLE projects (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
   category TEXT NOT NULL CHECK(category IN ('infrastructure', 'product', 'marketing', 'internal')),
-  isPublic INTEGER NOT NULL DEFAULT 0 CHECK(isPublic IN (0, 1)),
-  createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-  updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  is_public BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
 **Design Decisions:**
 
-1. **INTEGER PRIMARY KEY AUTOINCREMENT**:
-   - Auto-generates unique IDs
-   - Common pattern in all databases
+1. **SERIAL PRIMARY KEY**:
+   - Auto-generates unique integer IDs
+   - PostgreSQL equivalent of AUTOINCREMENT
 
 2. **CHECK Constraints**:
    - Enforces valid categories at the database level
-   - Prevents invalid data even if validation is bypassed
-   - `isPublic` limited to 0 or 1 (SQLite's boolean)
+   - Prevents invalid data even if application validation is bypassed
 
-3. **NOT NULL**:
-   - Makes required fields explicit
-   - Prevents null pointer issues
+3. **BOOLEAN type**:
+   - PostgreSQL has a native BOOLEAN — no integer-to-boolean conversion needed
+   - Maps directly to JavaScript `true`/`false`
 
-4. **TEXT for Dates**:
-   - SQLite stores dates as ISO strings
-   - Easy to read in database tools
-   - Converts to JavaScript Date objects easily
+4. **TIMESTAMPTZ for Dates**:
+   - Stores timestamps with timezone information
+   - postgres.js returns these as JavaScript `Date` objects automatically
+   - `NOW()` generates the current timestamp
 
-5. **Index on Category**:
+5. **snake_case Column Names**:
+   - PostgreSQL convention for column names
+   - The `transform: postgres.camel` option in the driver automatically converts
+     these to camelCase in JavaScript (e.g., `is_public` → `isPublic`)
+
+6. **Index on Category**:
    - Speeds up filtering by category
    - Small overhead on writes, big gains on reads
 
@@ -66,106 +86,80 @@ Instead of writing SQL everywhere, we centralize database operations in **reposi
 ### Example: getProjectById
 
 ```typescript
-export function getProjectById(id: number): ProjectWithBoolean | null {
-  const stmt = db.prepare(`
+export async function getProjectById(id: number): Promise<Project | null> {
+  const [project] = await sql<Project[]>`
     SELECT * FROM projects
-    WHERE id = ?
-  `);
+    WHERE id = ${id}
+  `;
 
-  const project = stmt.get(id) as Project | undefined;
-  return project ? convertToBoolean(project) : null;
+  return project ?? null;
 }
 ```
 
 ### Key Patterns:
 
-1. **Prepared Statements**:
-   - `db.prepare()` compiles SQL once, reuses it
-   - Prevents SQL injection
-   - Better performance
+1. **Tagged Template Literals**:
+   - `sql\`SELECT * FROM projects WHERE id = ${id}\``
+   - Values are automatically parameterized (prevents SQL injection)
+   - Looks like string interpolation but is actually safe
 
-2. **Parameterized Queries**:
-   - `?` placeholders prevent injection
-   - Never concatenate user input into SQL
+2. **Async/Await**:
+   - All repository functions are `async` (PostgreSQL is non-blocking)
+   - Callers must `await` the result
 
-3. **Type Conversion**:
-   - `convertToBoolean()` converts SQLite integers to JS booleans
-   - Makes data easier to work with in React
+3. **RETURNING Clause**:
+   - `INSERT ... RETURNING *` gets the new row in one query
+   - No need for a separate SELECT after INSERT (unlike SQLite)
 
 4. **Null Handling**:
-   - Return `null` when not found
-   - Makes it clear when data doesn't exist
-
-## Boolean Handling
-
-SQLite doesn't have a native boolean type. We handle this with:
-
-```typescript
-// Database schema uses INTEGER (0 or 1)
-interface Project {
-  isPublic: number;
-}
-
-// Application uses boolean
-interface ProjectWithBoolean {
-  isPublic: boolean;
-}
-
-// Conversion function
-function convertToBoolean(project: Project): ProjectWithBoolean {
-  return {
-    ...project,
-    isPublic: project.isPublic === 1,
-  };
-}
-```
-
-**Why this pattern?**
-- SQLite layer stays true to SQLite types
-- Application layer uses idiomatic JavaScript
-- Type system enforces correct usage
+   - Destructure the first element: `const [project] = await sql\`...\``
+   - Return `null` when not found using nullish coalescing
 
 ## Transactions
 
-For multiple related operations, we use transactions:
+For multiple related operations, we use `sql.begin()`:
 
 ```typescript
-const insertMany = db.transaction((projects) => {
+await sql.begin(async (tx) => {
   for (const project of projects) {
-    insert.run(project.name, project.description, ...);
+    await tx`
+      INSERT INTO projects (name, description, category, is_public)
+      VALUES (${project.name}, ${project.description}, ${project.category}, ${project.isPublic})
+    `;
   }
 });
-
-insertMany(projects); // Atomic: all or nothing
 ```
 
 **Benefits:**
 - Atomic operations (all succeed or all fail)
-- Better performance (single disk write)
-- Data consistency
+- The `tx` parameter is a scoped sql instance bound to the transaction
+- Connection is automatically returned to the pool when done
 
 ## Database Initialization
 
-The database is initialized on module load:
+The database is initialized asynchronously on module load:
 
 ```typescript
 // lib/db/index.ts
-const db = new Database(dbPath);
+const sql = postgres(process.env.DATABASE_URL!, {
+  transform: postgres.camel,
+});
 
-// Run initialization
-initializeDatabase();
+initializeDatabase().catch((err) => {
+  console.error('Database initialization failed:', err.message);
+});
 
-export { db };
+export { sql };
 ```
 
 **Why this approach?**
 - Module is cached by Node.js (runs once)
-- Database is ready when first imported
-- Simple migration strategy for learning
+- `.catch()` prevents unhandled rejections if DB isn't running
+- Individual queries will fail with clear errors if initialization failed
 
 **Production Note**: In real apps, you'd use a proper migration system like:
 - Drizzle Kit
-- node-migrate
+- node-pg-migrate
 - Custom migration scripts
 
 ## Seed Data
@@ -173,14 +167,16 @@ export { db };
 We automatically seed the database if it's empty:
 
 ```typescript
-const count = db.prepare('SELECT COUNT(*) as count FROM projects').get();
+const [{ count }] = await sql<[{ count: number }]>`
+  SELECT COUNT(*)::int AS count FROM projects
+`;
 
-if (count.count === 0) {
-  // Insert seed data
+if (count === 0) {
+  // Insert seed data in a transaction
 }
 ```
 
-This gives us sample data to work with immediately.
+This gives us sample data to work with immediately. The `::int` cast converts PostgreSQL's `bigint` COUNT result to a JavaScript number.
 
 ## What About ORMs?
 
@@ -197,21 +193,21 @@ We intentionally **don't use an ORM** (like Prisma or Drizzle) because:
 - Multi-database support needed
 - Automatic migrations preferred
 
-For this learning project, raw SQL is more educational.
+For this learning project, raw SQL with postgres.js is more educational.
 
 ## Error Handling
 
-Database errors are handled at the repository layer:
+Database errors propagate naturally to Server Actions:
 
 ```typescript
-export function createProject(input: CreateProjectInput): ProjectWithBoolean {
-  try {
-    const result = stmt.run(...);
-    return getProjectById(result.lastInsertRowid);
-  } catch (error) {
-    // Let it propagate - Server Actions will catch it
-    throw error;
-  }
+export async function createProject(input: CreateProjectInput): Promise<Project> {
+  const [project] = await sql<Project[]>`
+    INSERT INTO projects (name, description, category, is_public)
+    VALUES (${input.name}, ${input.description}, ${input.category}, ${input.isPublic})
+    RETURNING *
+  `;
+
+  return project;
 }
 ```
 
@@ -219,18 +215,4 @@ We don't wrap errors in repositories because:
 - Server Actions handle errors centrally
 - Simpler code
 - Error details preserved
-
-## Database File Location
-
-```
-data/
-  app.db  # SQLite database file
-```
-
-This directory is gitignored. Each developer gets their own database file.
-
-**Production Note**: In production, you'd use:
-- PostgreSQL/MySQL for multi-user access
-- Proper backups
-- Connection pooling
-- Read replicas for scaling
+- postgres.js provides descriptive error messages

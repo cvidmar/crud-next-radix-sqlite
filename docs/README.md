@@ -23,10 +23,10 @@ Start here to understand the big picture. This explains:
 
 ### 2. [Database Design and Patterns](./02-database.md)
 Learn about the data layer:
-- Why SQLite and better-sqlite3
+- Why PostgreSQL and postgres.js
 - Schema design decisions
 - Repository pattern implementation
-- Boolean handling and type conversions
+- Tagged template queries and camelCase transform
 - When to use (and not use) an ORM
 
 ### 3. [Routing and Rendering](./03-routing-and-rendering.md)
