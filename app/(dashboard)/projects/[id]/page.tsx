@@ -35,7 +35,7 @@ export default async function ProjectPage({ params }: PageProps) {
   }
 
   // Fetch the project from database
-  const project = getProjectById(projectId);
+  const project = await getProjectById(projectId);
 
   // Show 404 if project doesn't exist
   if (!project) {

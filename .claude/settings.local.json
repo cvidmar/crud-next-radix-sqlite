@@ -14,7 +14,15 @@
       "Bash(git push)",
       "Bash(ls:*)",
       "Bash(pnpm build:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Skill(agent-browser)",
+      "Skill(agent-browser:*)",
+      "Bash(lsof:*)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm dlx agent-browser:*)",
+      "mcp__claude_ai_Context7__resolve-library-id",
+      "mcp__claude_ai_Context7__query-docs",
+      "Bash(pnpm remove:*)"
     ],
     "deny": [],
     "ask": []

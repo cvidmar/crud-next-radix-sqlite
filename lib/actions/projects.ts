@@ -60,7 +60,7 @@ export async function createProject(prevState: any, formData: FormData) {
 
   try {
     // Create the project in the database
-    const project = dbCreateProject(validationResult.data);
+    const project = await dbCreateProject(validationResult.data);
     projectId = project.id;
 
     // Revalidate the cache for the dashboard page
@@ -108,7 +108,7 @@ export async function updateProject(id: number, prevState: any, formData: FormDa
 
   try {
     // Update the project in the database
-    const project = dbUpdateProject({
+    const project = await dbUpdateProject({
       id,
       ...validationResult.data,
     });
@@ -142,7 +142,7 @@ export async function updateProject(id: number, prevState: any, formData: FormDa
  */
 export async function deleteProjectAction(id: number) {
   try {
-    const success = dbDeleteProject(id);
+    const success = await dbDeleteProject(id);
 
     if (!success) {
       return {

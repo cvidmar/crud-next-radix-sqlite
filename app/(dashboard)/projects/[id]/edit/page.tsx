@@ -30,7 +30,7 @@ export default async function EditProjectPage({ params }: PageProps) {
   }
 
   // Fetch the existing project
-  const project = getProjectById(projectId);
+  const project = await getProjectById(projectId);
 
   if (!project) {
     notFound();

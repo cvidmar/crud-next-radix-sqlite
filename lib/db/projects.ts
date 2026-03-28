@@ -1,43 +1,31 @@
 /**
  * Project Database Operations
  *
- * This file contains all database operations for projects.
- * This pattern is called the "Repository Pattern" - it abstracts database
- * operations into reusable functions.
+ * This file contains all database operations for projects using the
+ * Repository Pattern. All queries use postgres.js tagged template literals,
+ * which automatically parameterize values to prevent SQL injection.
  *
- * Benefits:
- * - Centralized data access logic
- * - Easy to test
- * - Type-safe with TypeScript
- * - Can be called from Server Actions or Server Components
+ * Key differences from the SQLite version:
+ * - All functions are async (PostgreSQL is non-blocking)
+ * - No boolean conversion needed (PostgreSQL has native BOOLEAN type)
+ * - Tagged templates replace prepared statements for parameterization
+ * - snake_case columns are auto-converted to camelCase by the driver
  */
 
-import { db } from './index';
-import type { Project, CreateProjectInput, UpdateProjectInput, ProjectWithBoolean } from './schema';
-
-/**
- * Convert SQLite integer boolean to JavaScript boolean
- */
-function convertToBoolean(project: Project): ProjectWithBoolean {
-  return {
-    ...project,
-    isPublic: project.isPublic === 1,
-  };
-}
+import { sql, initialized } from './index';
+import type { Project, CreateProjectInput, UpdateProjectInput } from './schema';
 
 /**
  * Get all projects
  *
  * @returns Array of all projects, ordered by most recently updated first
  */
-export function getAllProjects(): ProjectWithBoolean[] {
-  const stmt = db.prepare(`
+export async function getAllProjects(): Promise<Project[]> {
+  await initialized;
+  return sql<Project[]>`
     SELECT * FROM projects
-    ORDER BY updatedAt DESC
-  `);
-
-  const projects = stmt.all() as Project[];
-  return projects.map(convertToBoolean);
+    ORDER BY updated_at DESC
+  `;
 }
 
 /**
@@ -46,100 +34,71 @@ export function getAllProjects(): ProjectWithBoolean[] {
  * @param id - The project ID
  * @returns The project or null if not found
  */
-export function getProjectById(id: number): ProjectWithBoolean | null {
-  const stmt = db.prepare(`
+export async function getProjectById(id: number): Promise<Project | null> {
+  await initialized;
+  const [project] = await sql<Project[]>`
     SELECT * FROM projects
-    WHERE id = ?
-  `);
+    WHERE id = ${id}
+  `;
 
-  const project = stmt.get(id) as Project | undefined;
-  return project ? convertToBoolean(project) : null;
+  return project ?? null;
 }
 
 /**
  * Create a new project
  *
+ * PostgreSQL's RETURNING clause lets us get the inserted row in a single query,
+ * unlike SQLite where we needed a separate SELECT after INSERT.
+ *
  * @param input - Project data (without id, createdAt, updatedAt)
  * @returns The newly created project
  */
-export function createProject(input: CreateProjectInput): ProjectWithBoolean {
-  const stmt = db.prepare(`
-    INSERT INTO projects (name, description, category, isPublic)
-    VALUES (?, ?, ?, ?)
-  `);
+export async function createProject(input: CreateProjectInput): Promise<Project> {
+  await initialized;
+  const [project] = await sql<Project[]>`
+    INSERT INTO projects (name, description, category, is_public)
+    VALUES (${input.name}, ${input.description}, ${input.category}, ${input.isPublic})
+    RETURNING *
+  `;
 
-  // Convert boolean to SQLite integer (0 or 1)
-  const result = stmt.run(
-    input.name,
-    input.description,
-    input.category,
-    input.isPublic ? 1 : 0
-  );
-
-  // Get the newly created project
-  const newProject = getProjectById(result.lastInsertRowid as number);
-
-  if (!newProject) {
-    throw new Error('Failed to create project');
-  }
-
-  return newProject;
+  return project;
 }
 
 /**
  * Update an existing project
  *
- * This uses dynamic SQL generation to only update provided fields.
- * In production, you might use a query builder to make this cleaner.
+ * Uses dynamic SQL generation to only update provided fields.
+ * postgres.js supports dynamic column updates via the sql() helper.
  *
  * @param input - Project update data
  * @returns The updated project or null if not found
  */
-export function updateProject(input: UpdateProjectInput): ProjectWithBoolean | null {
-  // Build dynamic UPDATE query based on provided fields
-  const updates: string[] = [];
-  const values: any[] = [];
+export async function updateProject(input: UpdateProjectInput): Promise<Project | null> {
+  await initialized;
+  // Build a plain object with only the fields that were provided
+  const updates: Record<string, unknown> = {};
 
-  if (input.name !== undefined) {
-    updates.push('name = ?');
-    values.push(input.name);
-  }
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.category !== undefined) updates.category = input.category;
+  if (input.isPublic !== undefined) updates.is_public = input.isPublic;
 
-  if (input.description !== undefined) {
-    updates.push('description = ?');
-    values.push(input.description);
-  }
+  // Always update the timestamp
+  updates.updated_at = sql`NOW()`;
 
-  if (input.category !== undefined) {
-    updates.push('category = ?');
-    values.push(input.category);
-  }
-
-  if (input.isPublic !== undefined) {
-    updates.push('isPublic = ?');
-    values.push(input.isPublic ? 1 : 0);
-  }
-
-  // Always update the updatedAt timestamp
-  updates.push("updatedAt = datetime('now')");
-
-  // No updates to make
-  if (updates.length === 0) {
+  // No real updates to make (only timestamp)
+  if (Object.keys(updates).length === 1) {
     return getProjectById(input.id);
   }
 
-  // Add ID to the end of values array
-  values.push(input.id);
-
-  const stmt = db.prepare(`
+  const [project] = await sql<Project[]>`
     UPDATE projects
-    SET ${updates.join(', ')}
-    WHERE id = ?
-  `);
+    SET ${sql(updates, ...Object.keys(updates))}
+    WHERE id = ${input.id}
+    RETURNING *
+  `;
 
-  stmt.run(...values);
-
-  return getProjectById(input.id);
+  return project ?? null;
 }
 
 /**
@@ -148,32 +107,34 @@ export function updateProject(input: UpdateProjectInput): ProjectWithBoolean | n
  * @param id - The project ID to delete
  * @returns True if deleted, false if not found
  */
-export function deleteProject(id: number): boolean {
-  const stmt = db.prepare(`
+export async function deleteProject(id: number): Promise<boolean> {
+  await initialized;
+  const result = await sql`
     DELETE FROM projects
-    WHERE id = ?
-  `);
+    WHERE id = ${id}
+  `;
 
-  const result = stmt.run(id);
-  return result.changes > 0;
+  return result.count > 0;
 }
 
 /**
  * Search projects by name or description
  *
+ * PostgreSQL's ILIKE provides case-insensitive matching (unlike SQLite's LIKE
+ * which is case-insensitive only for ASCII by default).
+ *
  * @param query - Search query string
  * @returns Array of matching projects
  */
-export function searchProjects(query: string): ProjectWithBoolean[] {
-  const stmt = db.prepare(`
-    SELECT * FROM projects
-    WHERE name LIKE ? OR description LIKE ?
-    ORDER BY updatedAt DESC
-  `);
-
+export async function searchProjects(query: string): Promise<Project[]> {
+  await initialized;
   const searchTerm = `%${query}%`;
-  const projects = stmt.all(searchTerm, searchTerm) as Project[];
-  return projects.map(convertToBoolean);
+
+  return sql<Project[]>`
+    SELECT * FROM projects
+    WHERE name ILIKE ${searchTerm} OR description ILIKE ${searchTerm}
+    ORDER BY updated_at DESC
+  `;
 }
 
 /**
@@ -182,15 +143,13 @@ export function searchProjects(query: string): ProjectWithBoolean[] {
  * @param category - The category to filter by
  * @returns Array of projects in that category
  */
-export function getProjectsByCategory(
+export async function getProjectsByCategory(
   category: Project['category']
-): ProjectWithBoolean[] {
-  const stmt = db.prepare(`
+): Promise<Project[]> {
+  await initialized;
+  return sql<Project[]>`
     SELECT * FROM projects
-    WHERE category = ?
-    ORDER BY updatedAt DESC
-  `);
-
-  const projects = stmt.all(category) as Project[];
-  return projects.map(convertToBoolean);
+    WHERE category = ${category}
+    ORDER BY updated_at DESC
+  `;
 }

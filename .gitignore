@@ -40,8 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# database
-/data
-*.db
-*.db-shm
-*.db-wal
+# database (Docker volume handles PostgreSQL data persistence)

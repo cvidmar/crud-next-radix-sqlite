@@ -1,6 +1,6 @@
 # Next.js CRUD Sample Application
 
-A production-ready sample application demonstrating modern Next.js patterns with TypeScript, Radix UI, and SQLite.
+A production-ready sample application demonstrating modern Next.js patterns with TypeScript, Radix UI, and PostgreSQL.
 
 <p align="center">
   <img src="docs/images/desktop-view.png" alt="Desktop view with sidebar" height="400"/>
@@ -22,7 +22,7 @@ This is **not production code**, but rather a well-documented example that teach
 - **React 19**: Latest React with Server Components and Server Actions
 - **TypeScript 5**: Type-safe development with strict mode
 - **Tailwind CSS v4**: Utility-first styling with dark mode
-- **SQLite** (better-sqlite3 12.6.2): Local database
+- **PostgreSQL 17**: Database via Docker with postgres.js driver
 - **Radix UI**: Accessible component primitives
 - **Zod v4**: Runtime validation and type inference
 
@@ -44,28 +44,32 @@ This CRUD application demonstrates:
 
 ### Prerequisites
 
-- Node.js 14.21.1 or later
-- pnpm (recommended) or npm
+- Node.js 18 or later
+- pnpm
+- Docker (for PostgreSQL)
 
 ### Installation
 
 ```bash
 # Install dependencies
 pnpm install
-# or
-npm install
 
-# Run development server
-pnpm dev
-# or
-npm run dev
+# Start PostgreSQL and dev server
+make dev
+```
+
+Or manually:
+
+```bash
+docker compose up -d   # Start PostgreSQL
+pnpm dev               # Start dev server
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
 
 ### Database
 
-The SQLite database is **automatically created** on first run at `data/app.db` with sample seed data. You don't need to run any migrations or setup scripts.
+PostgreSQL runs in Docker via `docker-compose.yml`. The database schema and seed data are **automatically created** on first run. No migrations or setup scripts needed.
 
 ## Project Structure
 
@@ -93,7 +97,7 @@ docs/                   # Comprehensive documentation
 The `docs/` folder contains comprehensive guides that explain not just what the code does, but **why** it's structured this way:
 
 1. [**Architecture Overview**](docs/01-architecture.md) - High-level patterns and decisions
-2. [**Database Design**](docs/02-database.md) - Schema, repository pattern, and SQLite
+2. [**Database Design**](docs/02-database.md) - Schema, repository pattern, and PostgreSQL
 3. [**Routing and Rendering**](docs/03-routing-and-rendering.md) - Server vs Client Components
 4. [**Components and Styling**](docs/04-components-and-styling.md) - Radix UI and Tailwind
 5. [**Forms and Validation**](docs/05-forms-and-validation.md) - Server Actions and Zod
@@ -107,7 +111,7 @@ Pages fetch data directly from the database without API routes:
 ```typescript
 // app/(dashboard)/page.tsx
 export default async function DashboardPage() {
-  const projects = getAllProjects();  // Direct DB access
+  const projects = await getAllProjects();  // Direct DB access
   return <ProjectList projects={projects} />;
 }
 ```
@@ -138,10 +142,12 @@ Server Component (fetches data)
 ## Development Commands
 
 ```bash
-pnpm dev          # Start development server
-pnpm build        # Build for production
-pnpm start        # Start production server
-pnpm lint         # Run ESLint
+make dev              # Start PostgreSQL + dev server
+docker compose up -d  # Start PostgreSQL only
+pnpm dev              # Start development server
+pnpm build            # Build for production
+pnpm start            # Start production server
+pnpm lint             # Run ESLint
 ```
 
 ## What's Intentionally Missing
@@ -152,7 +158,7 @@ To keep the focus on core patterns:
 - **Tests**: Out of scope for this example
 - **Complex state management**: React 19 handles it
 - **ORM**: Raw SQL teaches fundamentals
-- **Multi-user support**: SQLite is single-user
+- **Multi-user support**: Single-developer scope
 
 These can be added as you scale the application.
 
@@ -168,7 +174,6 @@ These can be added as you scale the application.
 
 When adapting this for production:
 
-- Replace SQLite with PostgreSQL/MySQL
 - Add authentication (NextAuth.js, Clerk, etc.)
 - Add comprehensive tests
 - Implement proper error boundaries

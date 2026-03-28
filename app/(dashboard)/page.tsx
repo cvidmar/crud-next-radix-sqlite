@@ -10,6 +10,9 @@
  * - Static rendering by default (becomes dynamic when using database)
  */
 
+// Force dynamic rendering — this page fetches from PostgreSQL at request time
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { getAllProjects } from '@/lib/db/projects';
 import { Button } from '@/components/ui/button';
@@ -82,7 +85,7 @@ function ProjectCard({ project }: { project: any }) {
 export default async function DashboardPage() {
   // Direct database access in a Server Component
   // No API route needed!
-  const projects = getAllProjects();
+  const projects = await getAllProjects();
 
   return (
     <>
